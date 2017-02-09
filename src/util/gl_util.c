@@ -1,11 +1,3 @@
-//
-//  gl_util.c
-//  barvis
-//
-//  Created by Ian Malerich on 1/21/16.
-//  Copyright © 2016 Ian Malerich. All rights reserved.
-//
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -65,10 +57,7 @@ void init_gl() {
     // initialize the rendering objects that will be used for ray tracing
     init_screen_rect();
     init_shaders();
-
-    // TODO: Figure out why it is complaining about this, seems to work anyway.
-    // gl_check_errors("init_gl(...)");
-    glGetError(); // Remove the error that we're getting.
+    gl_check_errors("init_gl(...)");
 }
 
 void update_screen() {
