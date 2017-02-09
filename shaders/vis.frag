@@ -6,8 +6,17 @@ layout(location=0) out vec4 OutColor;
 #define M_PI 3.1415926535897932384626433832795
 #define M_E 2.71828
 
-#define BANDS 80
+#define BANDS 160
 #define THRESHOLD -80.0
+
+#define NUM_COLORS 5
+#define C1 rgb(252, 58, 87)
+#define C2 rgb(249, 19, 55)
+#define C3 rgb(135, 1, 36)
+#define C4 rgb(107, 8, 46)
+#define C5 rgb(77, 1, 30)
+
+#define BG rgb(8, 1, 20);
 
 uniform float pulse[BANDS];
 
@@ -25,7 +34,7 @@ float gaussian(float mean, float sigma, float x) {
 void main() {
     float h = 1.0 / float(BANDS);
     float sigma = h;
-    float K = 0.015;
+    float K = BANDS * 0.0000475; // I found this constant to work well.
 
     float sum = 0.0;
     for (int i=0; i<BANDS; i++) {
@@ -35,17 +44,23 @@ void main() {
     }
 
     float y = 1.0 - sum;
+    vec4 C[NUM_COLORS] = vec4[](C5, C4, C3, C2, C1);
 
-    if (TexCoord.y >= 27.0/28.0) {
-	OutColor = rgb(7, 104, 97);
+    if (TexCoord.y >= 27/28.0) {
+	OutColor = rgb(255, 255, 255) * 0.8 + C5 * 0.3;
     } else if (TexCoord.y >= y) {
-	OutColor = 
-	    y * rgb(7, 104, 97) +
-	    sum * rgb(254, 10, 49);
+	float h = (1.0 - y) / NUM_COLORS;
+	float yprime = TexCoord.y - y - (h/2.0);
+	int i = int((yprime / sum) * NUM_COLORS);
+	float p = 1.0 - (yprime - (float(i) * h)) / h;
+
+	if (i == NUM_COLORS-1) {
+	    OutColor = C[i];
+	} else {
+	    OutColor = p * C[i] + (1.0 - p) * C[i+1];
+	}
+
     } else {
-	float c = TexCoord.y - y;
-	OutColor = 
-	    y * rgb(0, 0, 0) +
-	    sum * rgb(10, 10, 10);
+	OutColor = BG;
     }
 }

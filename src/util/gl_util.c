@@ -7,6 +7,8 @@
 #include "gl_util.h"
 #include "file_io.h"
 
+#define VIS_SCALING 1.0
+
 unsigned screen_w = 1920;
 unsigned screen_h = 28;
 GLuint vis_tex;
@@ -81,7 +83,7 @@ void update_screen() {
 
     // Render the visualizer in 'vis_tex'.
     glBindFramebuffer(GL_FRAMEBUFFER, frame_buff);
-    glViewport(0, 0, gwa.width, gwa.height);
+    glViewport(0, 0, VIS_SCALING * gwa.width, VIS_SCALING * gwa.height);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glActiveTexture(GL_TEXTURE0);
@@ -116,12 +118,10 @@ void init_vis_tex() {
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, screen_w, screen_h, 0, GL_RGB, GL_FLOAT, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, VIS_SCALING * screen_w, VIS_SCALING * screen_h, 0, GL_RGB, GL_FLOAT, NULL);
 
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, vis_tex, 0);
     GLenum draw_buff[1] = { GL_COLOR_ATTACHMENT0 };
