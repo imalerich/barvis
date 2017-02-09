@@ -8,6 +8,12 @@
 #include<GL/glx.h>
 #include<GL/glu.h>
 
+extern unsigned screen_w;
+extern unsigned screen_h;
+
+extern GLuint vis_prog;
+extern GLuint simple_prog;
+
 /**
  * Initializes an OpenGL context using screen 
  * dimmensions of screen_w and screen_h.

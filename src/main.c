@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <stdbool.h>
 
+#include "util/audio.h"
 #include "util/window.h"
  
 int main(int argc, const char ** argv)  {
@@ -12,21 +13,24 @@ int main(int argc, const char ** argv)  {
     // Make sure we show up under the bar.
     XLowerWindow(dpy, win);
 
+    init_audio();
+    clean_audio();
+
     // Main run loop.
-    while (true) {
-	XEvent xev;
-	XWindowAttributes gwa;
+    // while (true) {
+    //     XEvent xev;
+    //     XWindowAttributes gwa;
 
-	XNextEvent(dpy, &xev);
-	if (xev.type == Expose) {
-	    XGetWindowAttributes(dpy, win, &gwa);
-	    glViewport(0, 0, gwa.width, gwa.height);
-	    glClearColor(0.0, 0.0, 0.0, 1.0);
-	    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	    update_screen();
-	    glXSwapBuffers(dpy, win);
-	}
+    //     XNextEvent(dpy, &xev);
+    //     if (xev.type == Expose) {
+    //         XGetWindowAttributes(dpy, win, &gwa);
+    //         glViewport(0, 0, gwa.width, gwa.height);
+    //         glClearColor(0.0, 0.0, 0.0, 1.0);
+    //         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    //         update_screen();
+    //         glXSwapBuffers(dpy, win);
+    //     }
 
-	sleep(1);
-    }
+    //     sleep(1);
+    // }
 }
