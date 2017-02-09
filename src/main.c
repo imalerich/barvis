@@ -5,9 +5,10 @@
 #include<X11/X.h>
 #include<X11/Xlib.h>
 
-#include<GL/gl.h>
-#include<GL/glx.h>
-#include<GL/glu.h>
+#define GLEW_STATIC
+#include<GL/glew.h>
+
+#include "gl_util.h"
 
 Display			* dpy;
 Window			root;
@@ -37,7 +38,7 @@ int main(int argc, const char ** argv)  {
 
     XClassHint * hint = XAllocClassHint();
     hint->res_name = "barvis";
-    hint->res_class = "desktop";
+    hint->res_class = "dektop";
     XSetClassHint(dpy, win, hint);
 
     XMapWindow(dpy, win);
@@ -46,6 +47,14 @@ int main(int argc, const char ** argv)  {
     glc = glXCreateContext(dpy, vi, NULL, GL_TRUE);
     glXMakeCurrent(dpy, win, glc);
 
+    glewExperimental = GL_TRUE;
+    glewInit();
+    glGetError();
+
+    init_gl();
+
+    // Make sure we show up under the bar.
+    XLowerWindow(dpy, win);
 
     // Main run loop.
     while (1) {
@@ -54,8 +63,9 @@ int main(int argc, const char ** argv)  {
 	if (xev.type == Expose) {
 	    XGetWindowAttributes(dpy, win, &gwa);
 	    glViewport(0, 0, gwa.width, gwa.height);
-	    glClearColor(0.1, 0.8, 0.3, 1.0);
+	    glClearColor(0.0, 0.0, 0.0, 1.0);
 	    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	    update_screen();
 	    glXSwapBuffers(dpy, win);
 	}
     }
