@@ -8,9 +8,6 @@
 #include<GL/glx.h>
 #include<GL/glu.h>
 
-extern unsigned screen_w;
-extern unsigned screen_h;
-
 extern GLuint vis_prog;
 
 /**

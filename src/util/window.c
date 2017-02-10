@@ -4,7 +4,7 @@ Display * dpy;
 Window win;
 GLXContext glc;
 
-void init_window() {
+void init_window(int width, int height, int x, int y) {
     Window root;
     GLint att[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
     XVisualInfo * vi;
@@ -20,7 +20,7 @@ void init_window() {
     swa.override_redirect = true;
 
     // Create the window.
-    win = XCreateWindow(dpy, root, 1366, 0, 1920, 28, 0, 
+    win = XCreateWindow(dpy, root, x, y, width, height, 0, 
 	vi->depth, InputOutput, vi->visual, 
 	CWColormap | CWEventMask | CWOverrideRedirect, 
 	&swa);

@@ -3,21 +3,18 @@
 in vec2 TexCoord;
 layout(location=0) out vec4 OutColor;
 
-#define BANDS 200
+// TODO: These should be input uniforms.
+#define BANDS 160
 #define THRESHOLD -80.0
-#define SCALE 50.0
+#define SCALE 60.0
 
 #define M_PI 3.1415926535897932384626433832795
 #define M_E 2.71828
 
-#define NUM_COLORS 5
+// TODO: These should be input uniforms.
 #define C1 rgb(252, 58, 87)
-#define C2 rgb(249, 19, 55)
-#define C3 rgb(135, 1, 36)
-#define C4 rgb(107, 8, 46)
-#define C5 rgb(77, 1, 30)
-
-#define BG rgb(8, 1, 20);
+#define C2 rgb(52, 88, 229)
+#define BG rgb(23, 35, 84);
 
 uniform float pulse[BANDS];
 
@@ -48,19 +45,14 @@ void main() {
     sum /= MAX;
 
     float y = 1.0 - sum;
-    vec4 C[NUM_COLORS] = vec4[](C5, C4, C3, C2, C1);
 
     if (TexCoord.y >= y) {
-	float h = (1.0 - y) / NUM_COLORS;
-	float yprime = TexCoord.y - y - (h/2.0);
-	int i = int((yprime / sum) * NUM_COLORS);
-	float p = 1.0 - (yprime - (float(i) * h)) / h;
+	// float h = (1.0 - y) / NUM_COLORS;
+	// float yprime = TexCoord.y - y - (h/2.0);
+	// int i = int((yprime / sum) * NUM_COLORS);
+	// float p = 1.0 - (yprime - (float(i) * h)) / h;
 
-	if (i == NUM_COLORS-1) {
-	    OutColor = C[i];
-	} else {
-	    OutColor = p * C[i] + (1.0 - p) * C[i+1];
-	}
+	OutColor = 0.9 * sum * C1 + 1.1 * y * C2;
 
     } else {
 	OutColor = BG;

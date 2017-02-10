@@ -8,10 +8,9 @@
 #include "shaders.h"
 #include "frame_buffer.h"
 
-unsigned screen_w = 1920;
-unsigned screen_h = 28;
-
 struct frame_buffer vis_frame;
+struct frame_buffer blur_h_frame;
+struct frame_buffer blur_v_frame;
 
 GLuint vao;
 GLuint vbo;
@@ -40,14 +39,18 @@ void check_shader_compile(const char * filename, GLuint shader);
 void init_frame_buffers();
 
 void init_vis_shader();
+void init_blur_shader();
 void init_simple_shader();
 
-// MARK : Update
+//////////////////////////
+//	Update		//
+//////////////////////////
 
 void update_screen() {
-    // Get window properties from XLib.
+    // Get the window size.
     XWindowAttributes gwa;
     XGetWindowAttributes(dpy, win, &gwa);
+    float SIZE[] = { gwa.width, gwa.height };
     glClearColor(0.0, 0.0, 0.0, 1.0);
 
     //////////////////////////////
@@ -62,10 +65,34 @@ void update_screen() {
     //////////////////////////////////////
     //	Gaussian Blur Horizontal Pass	//
     //////////////////////////////////////
+    
+    float RIGHT[] = { 1.0, 0.0 };
+
+    bind_frame_buffer(blur_h_frame);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glUseProgram(blur_prog);
+    glBindTexture(GL_TEXTURE_2D, vis_frame.tex);
+
+    glUniform1i(glGetUniformLocation(blur_prog, "tex"), 0);
+    glUniform2fv(glGetUniformLocation(blur_prog, "dir"), 1, RIGHT);
+    glUniform2fv(glGetUniformLocation(blur_prog, "size"), 1, SIZE);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
     //////////////////////////////////////
     //	Gaussian Blur Vertical Pass	//
     //////////////////////////////////////
+
+    float UP[] = { 0.0, 1.0 };
+
+    bind_frame_buffer(blur_v_frame);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glUseProgram(blur_prog);
+    glBindTexture(GL_TEXTURE_2D, blur_h_frame.tex);
+
+    glUniform1i(glGetUniformLocation(blur_prog, "tex"), 0);
+    glUniform2fv(glGetUniformLocation(blur_prog, "dir"), 1, UP);
+    glUniform2fv(glGetUniformLocation(blur_prog, "size"), 1, SIZE);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
     //////////////////////////////////////
     //	Render to the Back Buffer	//
@@ -73,8 +100,9 @@ void update_screen() {
 
     bind_screen_buffer(gwa.width, gwa.height);
     glUseProgram(simple_prog);
-    glBindTexture(GL_TEXTURE_2D, vis_frame.tex);
+    glBindTexture(GL_TEXTURE_2D, blur_v_frame.tex);
     glUniform1i(glGetUniformLocation(simple_prog, "tex"), 0);
+    glUniform2fv(glGetUniformLocation(simple_prog, "size"), 1, SIZE);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
     // Rendering is done, swap buffers.
@@ -82,7 +110,9 @@ void update_screen() {
     gl_check_errors("update_screen(...)");
 }
 
-// MARK : Init
+//////////////////////////
+//	Init		//
+//////////////////////////
 
 void init_gl() {
     // intialize glew
@@ -104,13 +134,20 @@ void init_gl() {
     // initialize the rendering objects that will be used for ray tracing
     init_screen_rect();
     init_vis_shader();
+    init_blur_shader();
     init_simple_shader();
     init_frame_buffers();
     gl_check_errors("init_gl(...)");
 }
 
 void init_frame_buffers() {
-    vis_frame = create_frame_buffer(screen_w, screen_h);
+    // Get the window size.
+    XWindowAttributes gwa;
+    XGetWindowAttributes(dpy, win, &gwa);
+
+    vis_frame = create_frame_buffer(gwa.width, gwa.height);
+    blur_h_frame = create_frame_buffer(gwa.width, gwa.height);
+    blur_v_frame = create_frame_buffer(gwa.width, gwa.height);
 }
 
 void init_screen_rect() {
@@ -122,6 +159,10 @@ void init_screen_rect() {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), &elements, GL_STATIC_DRAW);
 }
+
+//////////////////////////
+//	Shaders		//
+//////////////////////////
 
 void init_vis_shader() {
     vis_prog = compile_shader("shaders/simple.vert", "shaders/vis.frag");
@@ -140,7 +181,7 @@ void init_vis_shader() {
 }
 
 void init_blur_shader() {
-    blur_prog = compile_shader("shaders/simple.vert", "shaders/vis.frag");
+    blur_prog = compile_shader("shaders/simple.vert", "shaders/blur.frag");
     glBindFragDataLocation(blur_prog, 0, "OutColor");
 
     // tell the shader where each input is located on the vertex buffer
@@ -171,7 +212,9 @@ void init_simple_shader() {
     glEnableVertexAttribArray(tex_att);
 }
 
-// MARK : Errors
+//////////////////////////
+//	Errors		//
+//////////////////////////
 
 void gl_check_errors(const char * info) {
     GLenum gl_err;

@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <gst/gst.h>
 
-#define BANDS 200
+#define BANDS 160
 #define THRESHOLD -80
 #define AUDIOFREQ 8000
 

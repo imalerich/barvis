@@ -19,7 +19,11 @@ extern GLXContext glc;
  * This method will call the init_gl(..) method of
  * gl_util.h, so there is no need to call it after this
  * method completes.
+ * \param width Width for the new window.
+ * \param height Height for the new window.
+ * \param x X coordinate for the new window.
+ * \param y Y coordinate for the new window.
  */
-void init_window();
+void init_window(int width, int height, int x, int y);
 
 #endif
