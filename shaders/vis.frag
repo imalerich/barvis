@@ -47,11 +47,6 @@ void main() {
     float y = 1.0 - sum;
 
     if (TexCoord.y >= y) {
-	// float h = (1.0 - y) / NUM_COLORS;
-	// float yprime = TexCoord.y - y - (h/2.0);
-	// int i = int((yprime / sum) * NUM_COLORS);
-	// float p = 1.0 - (yprime - (float(i) * h)) / h;
-
 	OutColor = 0.9 * sum * C1 + 1.1 * y * C2;
 
     } else {
