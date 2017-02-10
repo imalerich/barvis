@@ -5,24 +5,20 @@
 
 #include "window.h"
 #include "gl_util.h"
-#include "file_io.h"
-
-#define VIS_SCALING 1.0
+#include "shaders.h"
+#include "frame_buffer.h"
 
 unsigned screen_w = 1920;
 unsigned screen_h = 28;
-GLuint vis_tex;
 
-GLenum gl_err;
+struct frame_buffer vis_frame;
 
 GLuint vao;
 GLuint vbo;
 GLuint ebo;
 
-GLuint frame_buff;
-
-GLuint vshader;
 GLuint vis_prog;
+GLuint blur_prog;
 GLuint simple_prog;
 
 // array of vertices describing the entire screen
@@ -41,11 +37,52 @@ const GLuint elements[] = {
 // private function prototypes
 void init_screen_rect();
 void check_shader_compile(const char * filename, GLuint shader);
-void init_vis_tex();
+void init_frame_buffers();
 
-void init_vshader();
 void init_vis_shader();
 void init_simple_shader();
+
+// MARK : Update
+
+void update_screen() {
+    // Get window properties from XLib.
+    XWindowAttributes gwa;
+    XGetWindowAttributes(dpy, win, &gwa);
+    glClearColor(0.0, 0.0, 0.0, 1.0);
+
+    //////////////////////////////
+    //	Render The Visualizer	//
+    //////////////////////////////
+
+    bind_frame_buffer(vis_frame);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glUseProgram(vis_prog);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+    //////////////////////////////////////
+    //	Gaussian Blur Horizontal Pass	//
+    //////////////////////////////////////
+
+    //////////////////////////////////////
+    //	Gaussian Blur Vertical Pass	//
+    //////////////////////////////////////
+
+    //////////////////////////////////////
+    //	Render to the Back Buffer	//
+    //////////////////////////////////////
+
+    bind_screen_buffer(gwa.width, gwa.height);
+    glUseProgram(simple_prog);
+    glBindTexture(GL_TEXTURE_2D, vis_frame.tex);
+    glUniform1i(glGetUniformLocation(simple_prog, "tex"), 0);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+    // Rendering is done, swap buffers.
+    glXSwapBuffers(dpy, win);
+    gl_check_errors("update_screen(...)");
+}
+
+// MARK : Init
 
 void init_gl() {
     // intialize glew
@@ -53,7 +90,7 @@ void init_gl() {
     int glew_err = GLEW_OK;
 
     if ((glew_err = glewInit()) != GLEW_OK) {
-        printf("error - glewInit():\nt\t%s\n", glewGetErrorString(gl_err));
+        printf("error - glewInit():\nt\t%s\n", glewGetErrorString(glew_err));
         exit(EXIT_FAILURE);
     }
 
@@ -66,66 +103,14 @@ void init_gl() {
 
     // initialize the rendering objects that will be used for ray tracing
     init_screen_rect();
-    init_vshader();
     init_vis_shader();
     init_simple_shader();
-    init_vis_tex();
+    init_frame_buffers();
     gl_check_errors("init_gl(...)");
 }
 
-void update_screen() {
-    // Get window properties from XLib.
-    XWindowAttributes gwa;
-    XGetWindowAttributes(dpy, win, &gwa);
-
-    // Clear the screen.
-    glClearColor(0.0, 0.0, 0.0, 1.0);
-
-    // Render the visualizer in 'vis_tex'.
-    glBindFramebuffer(GL_FRAMEBUFFER, frame_buff);
-    glViewport(0, 0, VIS_SCALING * gwa.width, VIS_SCALING * gwa.height);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, vis_tex);
-
-    glUseProgram(vis_prog);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-    // Now draw 'vis_tex' on the back buffer.
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glViewport(0, 0, gwa.width, gwa.height);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    glUseProgram(simple_prog);
-    glBindTexture(GL_TEXTURE_2D, vis_tex);
-    glUniform1i(glGetUniformLocation(simple_prog, "tex"), 0);
-
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-    // Rendering is done, swap buffers.
-    glXSwapBuffers(dpy, win);
-
-    gl_check_errors("update_screen(...)");
-}
-
-void init_vis_tex() {
-    glGenFramebuffers(1, &frame_buff);
-    glBindFramebuffer(GL_FRAMEBUFFER, frame_buff);
-
-    glGenTextures(1, &vis_tex);
-    glBindTexture(GL_TEXTURE_2D, vis_tex);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, VIS_SCALING * screen_w, VIS_SCALING * screen_h, 0, GL_RGB, GL_FLOAT, NULL);
-
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, vis_tex, 0);
-    GLenum draw_buff[1] = { GL_COLOR_ATTACHMENT0 };
-    glDrawBuffers(1, draw_buff);
+void init_frame_buffers() {
+    vis_frame = create_frame_buffer(screen_w, screen_h);
 }
 
 void init_screen_rect() {
@@ -138,42 +123,45 @@ void init_screen_rect() {
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), &elements, GL_STATIC_DRAW);
 }
 
-void init_vshader() {
-    const char * vs_file_name = "shaders/simple.vert";
-    char * vs_source = read_file(vs_file_name);
+void init_vis_shader() {
+    vis_prog = compile_shader("shaders/simple.vert", "shaders/vis.frag");
+    glBindFragDataLocation(vis_prog, 0, "OutColor");
 
-    // compile and check the vertex shader
-    vshader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vshader, 1, (const GLchar **)&vs_source, NULL);
-    glCompileShader(vshader);
-    check_shader_compile(vs_file_name, vshader);
+    // tell the shader where each input is located on the vertex buffer
+    GLint pos_att = glGetAttribLocation(vis_prog, "position");
+    GLint tex_att = glGetAttribLocation(vis_prog, "texcoord");
 
-    free(vs_source);
+    glVertexAttribPointer(pos_att, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
+    glVertexAttribPointer(tex_att, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
+                          (void *)(2 * sizeof(float)));
+
+    glEnableVertexAttribArray(pos_att);
+    glEnableVertexAttribArray(tex_att);
+}
+
+void init_blur_shader() {
+    blur_prog = compile_shader("shaders/simple.vert", "shaders/vis.frag");
+    glBindFragDataLocation(blur_prog, 0, "OutColor");
+
+    // tell the shader where each input is located on the vertex buffer
+    GLint pos_att = glGetAttribLocation(blur_prog, "position");
+    GLint tex_att = glGetAttribLocation(blur_prog, "texcoord");
+
+    glVertexAttribPointer(pos_att, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
+    glVertexAttribPointer(tex_att, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
+                          (void *)(2 * sizeof(float)));
+
+    glEnableVertexAttribArray(pos_att);
+    glEnableVertexAttribArray(tex_att);
 }
 
 void init_simple_shader() {
-    GLuint fshader;
-    const char * fs_file_name = "shaders/simple.frag";
-    char * fs_source = read_file(fs_file_name);
-
-    // compile and check the fragment shader
-    fshader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fshader, 1, (const GLchar **)&fs_source, NULL);
-    glCompileShader(fshader);
-    check_shader_compile(fs_file_name, fshader);
-
-    simple_prog = glCreateProgram();
-    glAttachShader(simple_prog, vshader);
-    glAttachShader(simple_prog, fshader);
-
+    simple_prog = compile_shader("shaders/simple.vert", "shaders/simple.frag");
     glBindFragDataLocation(simple_prog, 0, "OutColor");
 
-    glLinkProgram(simple_prog);
-    glUseProgram(simple_prog);
-
     // tell the shader where each input is located on the vertex buffer
-    GLint pos_att = glGetAttribLocation(vis_prog, "position");
-    GLint tex_att = glGetAttribLocation(vis_prog, "texcoord");
+    GLint pos_att = glGetAttribLocation(simple_prog, "position");
+    GLint tex_att = glGetAttribLocation(simple_prog, "texcoord");
 
     glVertexAttribPointer(pos_att, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
     glVertexAttribPointer(tex_att, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
@@ -181,59 +169,14 @@ void init_simple_shader() {
 
     glEnableVertexAttribArray(pos_att);
     glEnableVertexAttribArray(tex_att);
-
-    free(fs_source);
 }
 
-void init_vis_shader() {
-    GLuint fshader;
-    const char * fs_file_name = "shaders/vis.frag";
-    char * fs_source = read_file(fs_file_name);
-
-    // compile and check the fragment shader
-    fshader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fshader, 1, (const GLchar **)&fs_source, NULL);
-    glCompileShader(fshader);
-    check_shader_compile(fs_file_name, fshader);
-
-    vis_prog = glCreateProgram();
-    glAttachShader(vis_prog, vshader);
-    glAttachShader(vis_prog, fshader);
-
-    glBindFragDataLocation(vis_prog, 0, "OutColor");
-
-    glLinkProgram(vis_prog);
-    glUseProgram(vis_prog);
-
-    // tell the shader where each input is located on the vertex buffer
-    GLint pos_att = glGetAttribLocation(vis_prog, "position");
-    GLint tex_att = glGetAttribLocation(vis_prog, "texcoord");
-
-    glVertexAttribPointer(pos_att, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
-    glVertexAttribPointer(tex_att, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
-                          (void *)(2 * sizeof(float)));
-
-    glEnableVertexAttribArray(pos_att);
-    glEnableVertexAttribArray(tex_att);
-
-    free(fs_source);
-}
-
-void check_shader_compile(const char * filename, GLuint shader) {
-    GLint status;
-    char buffer[512];
-
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
-    glGetShaderInfoLog(shader, 512, NULL, buffer);
-
-    // check for any log info
-    if (strlen(buffer) > 0) {
-        printf("%s\n%s\n", filename, buffer);
-    }
-}
+// MARK : Errors
 
 void gl_check_errors(const char * info) {
+    GLenum gl_err;
     bool found_err = false;
+
     while ((gl_err = glGetError()) != 0) {
         found_err = true;
         fprintf(stderr, "%s - err: %d\n", info, gl_err);

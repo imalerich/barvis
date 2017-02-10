@@ -6,9 +6,9 @@
 #include <stdlib.h>
 #include <gst/gst.h>
 
-#define BANDS 160
+#define BANDS 200
 #define THRESHOLD -80
-#define AUDIOFREQ 15000
+#define AUDIOFREQ 8000
 
 /**
  * Initialize gstreamer.
