@@ -8,7 +8,7 @@
 
 #define BANDS 160
 #define THRESHOLD -80
-#define AUDIOFREQ 5000
+#define AUDIOFREQ 6000
 
 /**
  * Initialize gstreamer.

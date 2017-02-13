@@ -7,7 +7,7 @@ uniform sampler2D tex;
 uniform vec2 size;
 
 #define BORDER rgb(133, 209, 235)
-#define BORDER_WIDTH 2
+#define BORDER_WIDTH 1
 
 vec4 rgb(float R, float G, float B) {
     return vec4(R/255.0, G/255.0, B/255.0, 1.0);
