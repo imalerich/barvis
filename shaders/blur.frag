@@ -25,7 +25,7 @@ float gaussian(float mean, float sigma, float x) {
 #define SIGMA 30
 #define MEAN 0.0
 
-void main() {
+void blur() {
     OutColor = vec4(0.0, 0.0, 0.0, 0.0);
     for (int i=-H_KERNEL_WIDTH; i<H_KERNEL_WIDTH; ++i) {
         vec2 texcoord = vec2(TexCoord.x, 1.0 - TexCoord.y) +
@@ -34,4 +34,12 @@ void main() {
     }
 
     OutColor.a = 1.0;
+}
+
+void noblur() {
+	OutColor = texture(tex, TexCoord);
+}
+
+void main() {
+	blur();
 }

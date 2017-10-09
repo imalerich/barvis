@@ -9,39 +9,39 @@ GMainLoop * loop;
 
 static gboolean message_handler(GstBus * bus, GstMessage * message, gpointer data) {
     if (message->type == GST_MESSAGE_ELEMENT) {
-	const GstStructure * s = gst_message_get_structure(message);
-	const char * name = gst_structure_get_name(s);
-	GstClockTime endtime;
+		const GstStructure * s = gst_message_get_structure(message);
+		const char * name = gst_structure_get_name(s);
+		GstClockTime endtime;
 
-	if (strcmp(name, "spectrum") == 0) {
-	    const GValue * magnitudes;
-	    const GValue * mag, * phase;
-	    gdouble freq;
-	    guint i;
+		if (strcmp(name, "spectrum") == 0) {
+			const GValue * magnitudes;
+			const GValue * mag, * phase;
+			gdouble freq;
+			guint i;
 
-	    if (!gst_structure_get_clock_time(s, "endtime", &endtime)) {
-		endtime = GST_CLOCK_TIME_NONE;
-	    }
+			if (!gst_structure_get_clock_time(s, "endtime", &endtime)) {
+				endtime = GST_CLOCK_TIME_NONE;
+			}
 
-	    magnitudes = gst_structure_get_value(s, "magnitude");
+			magnitudes = gst_structure_get_value(s, "magnitude");
 
-	    GLfloat gl_pulse[BANDS];
+			GLfloat gl_pulse[BANDS];
 
-	    for (i=0; i<BANDS; ++i) {
-		freq = (gdouble)((AUDIOFREQ/2) * i + AUDIOFREQ/4) / BANDS;
-		mag = gst_value_list_get_value(magnitudes, i);
+			for (i=0; i<BANDS; ++i) {
+				freq = (gdouble)((AUDIOFREQ/2) * i + AUDIOFREQ/4) / BANDS;
+				mag = gst_value_list_get_value(magnitudes, i);
 
-		if (mag != NULL) {
-		    gl_pulse[i] = (GLfloat)g_value_get_float(mag);
-		} else {
-		    gl_pulse[i] = -80.0f;
+				if (mag != NULL) {
+					gl_pulse[i] = (GLfloat)g_value_get_float(mag);
+				} else {
+					gl_pulse[i] = -80.0f;
+				}
+			}
+
+			glUseProgram(vis_prog);
+			glUniform1fv(glGetUniformLocation(vis_prog, "pulse"), BANDS, gl_pulse);
+			update_screen();
 		}
-	    }
-
-	    glUseProgram(vis_prog);
-	    glUniform1fv(glGetUniformLocation(vis_prog, "pulse"), BANDS, gl_pulse);
-	    update_screen();
-	}
     }
 
     return TRUE;

@@ -13,34 +13,37 @@ int main(int argc, char ** argv)  {
     int coords[] = { 0, 0, 0, 0 };
 
     static struct option long_options[] = {
-	// Empty for now
+		// Empty for now
     };
 
     char c = 0;
     int option_index = 0;
-    while ((c = getopt_long(argc, argv, "g:", long_options, &option_index)) != -1) {
-	char * end;
-	// Keep it easy for now.
-	switch (c) {
-	    case 'g':
-		for (int idx=0, i=0; i<strlen(optarg); ++i) {
-		    char val = optarg[i];
-		    if (val == 'x' || val == '+') {
-			idx++;
-			continue;
-		    }
+    while ((c = getopt_long(argc, argv, "g:h", long_options, &option_index)) != -1) {
+		char * end;
+		// Keep it easy for now.
+		switch (c) {
+			case 'g':
+			for (int idx=0, i=0; i<strlen(optarg); ++i) {
+				char val = optarg[i];
+				if (val == 'x' || val == '+') {
+				idx++;
+				continue;
+				}
 
-		    coords[idx] = coords[idx] * 10 + (val - '0');
+				coords[idx] = coords[idx] * 10 + (val - '0');
+			}
+			break;
+			case 'h':
+			print_help();
+			exit(0);
 		}
-		break;
-	}
     }
 
     if (coords[0] == 0 && coords[1] == 0 && coords[2] == 0 && coords[3] == 0) {
-	printf("Invalid Layout Provided!\n");
-	printf("---------------------------\n");
-	print_help();
-	exit(0);
+		printf("Invalid Layout Provided!\n");
+		printf("---------------------------\n");
+		print_help();
+		exit(0);
     }
 
     init_window(coords[0], coords[1], coords[2], coords[3]);

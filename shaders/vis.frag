@@ -4,7 +4,7 @@ in vec2 TexCoord;
 layout(location=0) out vec4 OutColor;
 
 // TODO: These should be input uniforms.
-#define BANDS 160
+#define BANDS 50
 #define THRESHOLD -80.0
 #define SCALE 60.0
 
@@ -12,9 +12,9 @@ layout(location=0) out vec4 OutColor;
 #define M_E 2.71828
 
 // TODO: These should be input uniforms.
-#define C1 rgb(133, 209, 235)
-#define C2 rgb(71, 135, 209)
-#define BG rgb(0, 59, 89);
+#define C1 rgb(143, 65, 59)
+#define C2 rgb(143, 65, 59)
+#define BG rgb(0, 0, 0)
 
 uniform float pulse[BANDS];
 
@@ -29,27 +29,45 @@ float gaussian(float mean, float sigma, float x) {
     return num / den;
 }
 
-void main() {
+void norm() {
     float h = 1.0 / float(BANDS);
     float sigma = h;
 
     float sum = 0.0;
     float MAX = 0.0;
     for (int i=0; i<BANDS; i++) {
-	float xi = (1.0 + 2.0*i) * 0.5 * h;
-	float P = (pulse[i] - THRESHOLD) / SCALE;
-	float g = gaussian(xi, sigma, TexCoord.x);
-	MAX += g;
-	sum += P * g;
+		float xi = (1.0 + 2.0*i) * 0.5 * h;
+		float P = (pulse[i] - THRESHOLD) / SCALE;
+		float g = gaussian(xi, sigma, TexCoord.x);
+		MAX += g;
+		sum += P * g;
     }
     sum /= MAX;
 
     float y = 1.0 - sum;
 
     if (TexCoord.y >= y) {
-	OutColor = 0.9 * sum * C1 + 1.1 * y * C2;
+		float c = max(min(y + 0.5, 1), 0);
+		// OutColor = 0.9 * sum * C1 + 1.1 * y * C2;
+		OutColor = (C1 * sum) + BG * (1-sum);
 
     } else {
-	OutColor = BG;
+		OutColor = BG;
     }
+}
+
+void square() {
+	int i = max(min(int(TexCoord.x * BANDS), BANDS-1), 0);
+	float perc = (pulse[i] - THRESHOLD) / SCALE;
+	float y = 1.0 - perc;
+
+	if (TexCoord.y >= y) {
+		OutColor = C2;
+	} else {
+		OutColor = BG;
+	}
+}
+
+void main() {
+	norm();
 }
