@@ -12,8 +12,8 @@ layout(location=0) out vec4 OutColor;
 #define M_E 2.71828
 
 // TODO: These should be input uniforms.
-#define C1 rgb(143, 65, 59)
-#define C2 rgb(143, 65, 59)
+#define C1 rgb(21, 69, 93)
+#define C2 rgb(21, 69, 91)
 #define BG rgb(0, 0, 0)
 
 uniform float pulse[BANDS];
