@@ -58,7 +58,7 @@ void init_audio() {
 
     spectrum = gst_element_factory_make("spectrum", "spectrum");
     g_object_set(G_OBJECT(spectrum), "bands", BANDS, "threshold", THRESHOLD,
-	"post-messages", TRUE, "message-phase", TRUE, NULL);
+		"post-messages", TRUE, "message-phase", TRUE, NULL);
 
     sink = gst_element_factory_make("fakesink", "sink");
     g_object_set(G_OBJECT(sink), "sync", TRUE, NULL);
@@ -68,10 +68,10 @@ void init_audio() {
     caps = gst_caps_new_simple("audio/x-raw", "rate", G_TYPE_INT, AUDIOFREQ, NULL);
 
     if (!gst_element_link(src, audioconv) ||
-	    !gst_element_link_filtered(audioconv, spectrum, caps) ||
-	    !gst_element_link(spectrum, sink)) {
-	fprintf(stderr, "Failed to link elements.\n");
-	exit(1);
+			!gst_element_link_filtered(audioconv, spectrum, caps) ||
+			!gst_element_link(spectrum, sink)) {
+		fprintf(stderr, "Failed to link elements.\n");
+		exit(1);
     }
     gst_caps_unref(caps);
 
