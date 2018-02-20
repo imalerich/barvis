@@ -1,6 +1,6 @@
 ## barvis
 
-Barvis provides a minimal music visualizer in OpenGL, intended to be used as a background application for Link status bars.
+Barvis provides a minimal music visualizer in OpenGL, intended to be used as a background application for Linux status bars.
 
 ![alt tag](https://raw.githubusercontent.com/imalerich/barvis/master/img/preview.png)
 
